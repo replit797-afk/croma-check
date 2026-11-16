@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Croma Coupon Checker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.5 Inter,system-ui,-apple-system,sans-serif;background:#f5f5f5;color:#111;min-height:100vh;padding:24px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:24px;letter-spacing:-.03em}
+  .sub{color:#777;font-size:13px;margin:4px 0 20px}
+  .card{background:#fff;border:1px solid #ddd;border-radius:12px;padding:18px;margin-bottom:14px}
+  .card h2{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .num-badge{display:inline-grid;place-items:center;width:24px;height:24px;background:#111;color:#fff;border-radius:6px;font-size:12px;font-weight:800}
+  label{display:block;font-size:11px;font-weight:800;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+  textarea{display:block;width:100%;padding:11px 13px;background:#fafafa;border:1px solid #ddd;border-radius:9px;color:#111;font:12px/1.5 ui-monospace,Menlo,monospace;resize:vertical;outline:0}
+  textarea:focus{border-color:#111;box-shadow:0 0 0 3px #0001}
+  .hint{color:#999;font-size:11px;margin-top:6px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+  button{border:1px solid #111;border-radius:8px;padding:11px 18px;color:#fff;font-size:12px;font-weight:800;cursor:pointer;background:#111;transition:opacity .1s}
+  button:hover{opacity:.85}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  button.ghost{background:#fff;color:#111}
+  button.danger{background:#fff;color:#c00;border-color:#c00}
+  .filebtn{position:relative;overflow:hidden;display:inline-flex}
+  .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  input[type=number]{width:60px;padding:9px;background:#fafafa;border:1px solid #ddd;border-radius:7px;color:#111;font:800 13px ui-monospace,monospace;text-align:center;outline:0}
+  .conc-label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#555}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:#111;color:#fff;border-radius:10px;padding:14px}
+  .stat span{display:block;font-size:9px;font-weight:800;letter-spacing:.12em;color:#999;text-transform:uppercase}
+  .stat b{display:block;font-size:24px;margin-top:2px}
+  .stat.g b{color:#00d47e}.stat.y b{color:#ffd60a}.stat.r b{color:#ff5c5c}
+  .status{min-height:20px;color:#555;font-size:13px;margin-top:12px;font-weight:600}
+  .status.good{color:#008a4c}.status.warn{color:#b45309}.status.error{color:#c00}
+  .progress{height:6px;margin-top:8px;background:#eee;border-radius:99px;overflow:hidden}
+  .progress i{display:block;height:100%;width:0;background:#111;transition:width .25s}
+  .progline{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px}
+  table{width:100%;border-collapse:collapse;font:12px ui-monospace,Menlo,monospace;margin-top:12px}
+  th{position:sticky;top:0;padding:10px;background:#111;color:#fff;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+  td{padding:9px 10px;border-bottom:1px solid #eee;color:#333;word-break:break-word}
+  td.ok{color:#008a4c;font-weight:900}td.na{color:#b45309;font-weight:900}td.err{color:#c00;font-weight:900}
+  .scroll{max-height:380px;overflow:auto;border:1px solid #ddd;border-radius:10px}
+  .validbox{margin-top:10px;color:#067d4b;font:12px/1.7 ui-monospace,monospace;white-space:pre-wrap;background:#f0faf4;border:1px solid #bfe6cf;border-radius:9px;padding:13px;max-height:160px;overflow:auto}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;background:#e6f9ef;color:#067d4b;font-size:10px;font-weight:800;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Croma Coupon Checker</h1>
+  <p class="sub">Cart cURL + key ek baar paste karo, phir sirf coupons badal ke check karo. Sab kuch browser me save hota hai.</p>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <h2><span class="num-badge">1</span> Cart Request (cURL) <span class="badge" id="curlSaved">✓ saved</span></h2>
+    <label>Network tab → cart-modification POST request → Copy as cURL</label>
+    <textarea id="curl" rows="4" placeholder="curl 'https://api.croma.com/useraccount/allchannels/v2/users/...' -X 'POST' ..."></textarea>
+    <div class="hint">💡 Cart page kholke F12 → Network → filter "cart-modification" → POST wali request → right click → Copy as cURL (OPTIONS wali nahi!)</div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <h2><span class="num-badge">2</span> InCallResponse Key <span class="badge" id="keySaved">✓ saved</span></h2>
+    <label>Croma console me chalao: copy(localStorage.getItem('InCallResponse'))</label>
+    <textarea id="key" rows="3" placeholder="NDIzfDEyN3wzMzR8ODl8UXpr..."></textarea>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card">
+    <h2><span class="num-badge">3</span> Coupon Codes</h2>
+    <label>One code per line — ya TXT file load karo</label>
+    <textarea id="coupons" rows="6" placeholder="WELCOME10&#10;SAVE500&#10;FIRSTORDER"></textarea>
+    <div class="hint" id="couponCount">0 codes</div>
+    <div class="controls">
+      <button id="run">▶ Start Checking</button>
+      <button id="stop" class="danger" disabled>■ Stop</button>
+      <button class="ghost filebtn">📄 Load TXT<input type="file" id="file" accept=".txt,text/plain"></button>
+      <button class="ghost" id="csv">⬇ Valid CSV</button>
+      <button class="ghost" id="saveBtn">💾 Save Settings</button>
+      <button class="ghost danger" id="clear">🗑 Clear</button>
+      <span class="conc-label">Parallel <input type="number" id="conc" value="20" min="1" max="30"></span>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="progline"><span id="progText">Ready</span><span id="percent">0%</span></div>
+    <div class="status" id="status">Ready.</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><span>Checked</span><b id="sChecked">0</b></div>
+    <div class="stat g"><span>Valid ✅</span><b id="sValid">0</b></div>
+    <div class="stat y"><span>Not Applicable</span><b id="sNa">0</b></div>
+    <div class="stat r"><span>Errors</span><b id="sErr">0</b></div>
+  </div>
+
+  <!-- VALID -->
+  <div class="card">
+    <h2>✅ Valid Coupons</h2>
+    <div class="validbox" id="validList">—</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:16px 18px 0;display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0">All Results</h2>
+      <button class="ghost" style="padding:7px 12px" onclick="copyValid()">📋 Copy Valid</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>#</th><th>Coupon</th><th>Result</th><th>Discount</th><th>Message</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const LS = {curl:'cc_curl', key:'cc_key', coupons:'cc_coupons', conc:'cc_conc'};
+['curl','key','coupons','conc'].forEach(k => { $(k).value = localStorage.getItem(LS[k]) || ''; });
+
+function save(){ ['curl','key','coupons','conc'].forEach(k=>localStorage.setItem(LS[k],$(k).value)); checkBadges(); }
+['curl','key','coupons','conc'].forEach(id => $(id).addEventListener('input', save));
+
+function checkBadges(){
+  $('curlSaved').style.display = $('curl').value.includes('cart-modification') ? 'inline-block':'none';
+  $('keySaved').style.display  = $('key').value.trim().length > 20 ? 'inline-block':'none';
+}
+checkBadges();
+
+function parseCoupons(raw){ return [...new Set(raw.split(/[\n,;\t]+/).map(c=>c.trim().replace(/\s+/g,'').toUpperCase()).filter(Boolean))]; }
+
+function updateCount(){ $('couponCount').textContent = `${parseCoupons($('coupons').value).length} codes`; }
+$('coupons').addEventListener('input', updateCount); updateCount();
+
+$('saveBtn').onclick = () => { save(); $('status').textContent='✅ Settings saved!'; $('status').className='status good'; };
+
+/* TXT FILE LOAD */
+$('file').onchange = async e => {
+  const f = e.target.files?.[0]; if(!f) return;
+  try{
+    const text = await f.text();
+    const existing = $('coupons').value.trim();
+    $('coupons').value = existing ? existing + '\n' + text : text;
+    save(); updateCount();
+    $('status').textContent = `📄 ${f.name} loaded — ${parseCoupons($('coupons').value).length} total codes`;
+    $('status').className='status good';
+  }catch{ $('status').textContent='TXT padh nahi paaya'; $('status').className='status error'; }
+  e.target.value='';
+};
+
+/* BEEP jab valid mile */
+let audioCtx;
+function beep(){ try{
+  const C = window.AudioContext||window.webkitAudioContext; if(!C) return;
+  audioCtx = audioCtx || new C();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type='sine'; o.frequency.value=880;
+  g.gain.setValueAtTime(.15,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.15);
+  o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+.16);
+}catch{} }
+
+let running=false, stopReq=false, results=[], codes=[], doneCount=0;
+const counts={checked:0,valid:0,na:0,err:0};
+
+function readResult(code,data){
+  const list = Array.isArray(data?.cromaCustomerAppliedCouponDataList)?data.cromaCustomerAppliedCouponDataList:[];
+  const item = list.find(v=>String(v?.couponId||v?.couponCode||'').toUpperCase()===code);
+  const present=!!item, valid=item?.isApplied===true;
+  const discount = valid?Number(data?.orderDiscounts?.value||data?.totalDiscounts?.value||0):0;
+  return {valid,present,discount,unknown:!present,
+    message:item?.customerDisplayText||item?.responseMessage||(valid?'Applied':(present?'Not applicable':'No data'))};
+}
+
+function updateProgress(){
+  const total=codes.length||1;
+  const pct=Math.min(100,(doneCount/total)*100);
+  $('bar').style.width=pct+'%'; $('percent').textContent=Math.round(pct)+'%';
+  $('progText').textContent=`${doneCount} / ${total}`;
+}
+
+function render(){
+  $('sChecked').textContent=counts.checked; $('sValid').textContent=counts.valid;
+  $('sNa').textContent=counts.na; $('sErr').textContent=counts.err;
+  const vl = results.filter(r=>r.valid).map(r=>`${r.code} | Rs. ${(r.discount||0).toLocaleString('en-IN')} | ${r.message}`);
+  $('validList').textContent = vl.length?vl.join('\n'):'—';
+  const tb=$('tbody'); tb.innerHTML='';
+  results.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    const cls = r.pending?'':(r.unknown||r.error?'err':r.valid?'ok':'na');
+    const txt = r.pending?'⏳ …':(r.unknown?'↻ RETRY':r.error?'✕ ERROR':r.valid?'✓ VALID':'✕ NOT APPLICABLE');
+    tr.innerHTML=`<td>${i+1}</td><td>${r.code}</td><td class="${cls}">${txt}</td><td>${r.discount?'Rs. '+r.discount.toLocaleString('en-IN'):'—'}</td><td>${r.message||'Waiting...'}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function callApi(code, bodyOverride){
+  const body = bodyOverride || {toBeAppliedCouponsList:[code]};
+  const res = await fetch('/api/check',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({curl:$('curl').value.trim(), publicKeyStored:$('key').value.trim(), body})});
+  return res.json();
+}
+
+async function checkOne(i){
+  if(stopReq) return;
+  const code = codes[i];
+  try{
+    const out = await callApi(code);
+    if(out.error){ results[i]={code,error:true,message:out.error}; counts.err++; }
+    else{
+      const r = readResult(code,out.data);
+      results[i]={code,...r};
+      if(r.unknown) counts.err++; else if(r.valid){counts.valid++; beep(); callApi(null,{toBeRemovedCouponsList:[code]}).catch(()=>{});} else counts.na++;
+      counts.checked++;
+    }
+  }catch(e){ results[i]={code,error:true,message:String(e.message||e)}; counts.err++; }
+  render(); updateProgress();
+}
+
+async function run(){
+  if(running) return;
+  const curl=$('curl').value.trim();
+  if(!curl.includes('cart-modification')){$('status').textContent='❌ Step 1: cart-modification POST cURL paste karo pehle!';$('status').className='status error';return;}
+  const key=$('key').value.trim();
+  if(key.length<20){$('status').textContent='❌ Step 2: InCallResponse key paste karo!';$('status').className='status error';return;}
+  codes=parseCoupons($('coupons').value);
+  if(!codes.length){$('status').textContent='❌ Step 3: coupon codes daalo ya TXT load karo!';$('status').className='status error';return;}
+  save();
+  const conc=Math.max(1,Math.min(30,Number($('conc').value)||20));
+  $('conc').value=conc; localStorage.setItem(LS.conc,String(conc));
+
+  results=codes.map(c=>({code:c,pending:true}));
+  counts.checked=0;counts.valid=0;counts.na=0;counts.err=0;doneCount=0;
+  running=true;stopReq=false;
+  $('run').disabled=true;$('stop').disabled=false;
+  $('status').textContent='Checking...';$('status').className='status';
+  render();
+
+  const t0=Date.now();
+  /* ROUND 1 — sab parallel */
+  let next=0;
+  await Promise.all(Array.from({length:conc},async()=>{
+    for(;;){const my=next++;if(my>=codes.length||stopReq)break;await checkOne(my);doneCount++;}
+  }));
+
+  /* RETRY ROUNDS */
+  for(let round=2;round<=4&&!stopReq;round++){
+    const pending=results.map((r,i)=>(!r.pending&&(r.error||r.unknown))?i:-1).filter(i=>i>=0);
+    if(!pending.length)break;
+    $('status').textContent=`⏳ Retry round ${round} (${pending.length} codes)...`;
+    $('status').className='status warn';
+    await new Promise(r=>setTimeout(r,2500));
+    let pnext=0;const w=Math.max(4,Math.round(conc*0.6));
+    await Promise.all(Array.from({length:w},async()=>{
+      for(;;){const my=pnext++;if(my>=pending.length||stopReq)break;await checkOne(pending[my]);doneCount++;}
+    }));
+  }
+
+  /* Valid cleanup — ek request me */
+  const vc=results.filter(r=>r.valid).map(r=>r.code);
+  if(vc.length){try{await callApi(null,{toBeRemovedCouponsList:vc});}catch{}}
+
+  const secs=((Date.now()-t0)/1000).toFixed(1);
+  const failed=results.filter(r=>r.error).length;
+  $('status').textContent = stopReq
+    ? `Stopped — ${counts.valid} valid mile the.`
+    : `✅ Done in ${secs}s — ${counts.valid} valid | ${counts.na} NA | ${failed} fail`;
+  $('status').className = failed?'status warn':'status good';
+  $('bar').style.width='100%';$('percent').textContent='100%';
+  running=false;$('run').disabled=false;$('stop').disabled=false;
+}
+
+$('run').onclick=run;
+$('stop').onclick=()=>{stopReq=true;$('stop').disabled=true;$('status').textContent='Stopping...';};
+$('clear').onclick=()=>{if(running)return;$('coupons').value='';localStorage.removeItem(LS.coupons);results=[];render();updateCount();$('status').textContent='Cleared.';};
+$('csv').onclick=()=>{
+  const valid=results.filter(r=>r.valid);
+  if(!valid.length) return alert('Koi valid coupon nahi mila!');
+  const csv='Coupon,Discount,Message\n'+valid.map(r=>`"${r.code}",${r.discount||0},"${(r.message||'').replace(/"/g,'""')}"`).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='valid_coupons.csv';a.click();
+};
+function copyValid(){
+  const valid=results.filter(r=>r.valid).map(r=>r.code);
+  if(!valid.length) return alert('Koi valid coupon nahi mila!');
+  navigator.clipboard.writeText(valid.join('\n'));
+  alert('Valid codes copy ho gaye!');
+}
+</script>
+</body>
+</html>
